@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TestResult, Question, UserResponse, Flashcard, AIAnalysis } from '../types';
+import { TestResult, Question, UserResponse, Flashcard, AIAnalysis, Subject } from '../types';
 import { generateFlashcards, analyzePerformance } from '../services/geminiService';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { CheckCircle, XCircle, MinusCircle, Clock, Award, Target, BookOpen, Sparkles, Loader, Filter, CheckSquare, TrendingUp, TrendingDown, ArrowRight, Brain } from 'lucide-react';
@@ -33,7 +33,7 @@ export const ResultAnalysis: React.FC<ResultAnalysisProps> = ({ result, question
       }
 
       // AI Strategy & Prediction
-      const subjects = Array.from(new Set(questions.map(q => q.subject)));
+      const subjects = Array.from(new Set(questions.map(q => q.subject))) as string[];
       const subjectScores: Record<string, number> = {};
       subjects.forEach(sub => {
           const qs = questions.filter(q => q.subject === sub);
@@ -61,7 +61,7 @@ export const ResultAnalysis: React.FC<ResultAnalysisProps> = ({ result, question
     { name: 'Skipped', value: result.totalQuestions - result.attempted, color: '#94a3b8' },
   ];
 
-  const subjects = Array.from(new Set(questions.map(q => q.subject)));
+  const subjects = Array.from(new Set(questions.map(q => q.subject))) as string[];
   const subjectData = subjects.map(subject => {
     const subjectQuestions = questions.filter(q => q.subject === subject);
     const attempted = subjectQuestions.filter(q => result.responses[q.id]?.selectedOption !== null).length;
@@ -87,7 +87,7 @@ export const ResultAnalysis: React.FC<ResultAnalysisProps> = ({ result, question
   });
 
   return (
-    <div className="bg-gray-100 min-h-screen pb-12">
+    <div className="bg-gray-100 min-h-screen pb-24">
       <div className="bg-slate-800 text-white py-12 px-4">
          <div className="container mx-auto">
             <h2 className="text-3xl font-bold mb-2">Test Performance Analysis</h2>
@@ -230,116 +230,91 @@ export const ResultAnalysis: React.FC<ResultAnalysisProps> = ({ result, question
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {flashcards.map((card, idx) => (
-                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-l-4 border-l-yellow-400 p-5 hover:shadow-md transition">
-                    <div className="text-xs font-bold text-slate-400 uppercase mb-2 tracking-wider">Weak Area</div>
-                    <h4 className="font-bold text-lg text-slate-800 mb-2">{card.topic}</h4>
-                    <p className="text-slate-600 text-sm mb-4 leading-relaxed">{card.content}</p>
-                    <div className="bg-yellow-50 text-yellow-800 text-xs p-3 rounded font-medium">
-                        💡 Remember: {card.keyPoint}
-                    </div>
+                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 hover:shadow-md transition">
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">{card.topic}</div>
+                      <div className="text-slate-800 font-medium mb-3">{card.content}</div>
+                      <div className="bg-yellow-50 text-yellow-800 text-sm p-2 rounded border border-yellow-100 italic">
+                          💡 {card.keyPoint}
+                      </div>
                   </div>
                 ))}
             </div>
           </div>
         )}
 
-        {/* Detailed Solutions */}
-        <div id="review-solutions" className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b bg-slate-50 flex flex-wrap gap-4 justify-between items-center sticky top-0 z-10">
-             <div className="flex items-center gap-2">
-                 <CheckSquare className="w-5 h-5 text-slate-600" />
-                 <h3 className="text-lg font-bold text-slate-800">Review & Solutions</h3>
-             </div>
-             
-             <div className="flex items-center gap-2">
-                 <span className="text-sm text-slate-500 mr-2 hidden md:inline">Filter by:</span>
-                 <div className="flex bg-slate-200 rounded p-1">
-                    {(['All', 'Incorrect', 'Skipped'] as const).map((filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => setReviewFilter(filter)}
-                        className={`px-3 py-1 text-xs font-bold rounded transition ${
-                          reviewFilter === filter ? 'bg-white shadow text-slate-800' : 'text-slate-600 hover:text-slate-800'
-                        }`}
-                      >
-                        {filter}
-                      </button>
-                    ))}
-                 </div>
-                 <button onClick={onBackToDashboard} className="ml-4 bg-slate-800 text-white px-4 py-1.5 rounded text-sm font-bold hover:bg-slate-700">
-                    Exit
-                 </button>
-             </div>
-          </div>
-
-          <div className="divide-y divide-slate-100 max-h-[800px] overflow-y-auto">
-            {filteredQuestions.length === 0 ? (
-               <div className="p-10 text-center text-slate-500">
-                  <p>No questions found matching the selected filter.</p>
-               </div>
-            ) : filteredQuestions.map((q, idx) => {
-              const userRes = result.responses[q.id];
-              const isCorrect = userRes?.selectedOption === q.correctAnswer;
-              const isSkipped = userRes?.selectedOption === null || userRes?.selectedOption === undefined;
-              
-              const originalIndex = questions.findIndex(quest => quest.id === q.id) + 1;
-
-              return (
-                <div key={q.id} className="p-6 hover:bg-slate-50 transition">
-                  <div className="flex gap-4">
-                    <div className="flex-shrink-0">
-                       <span className={`
-                         flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm
-                         ${isCorrect ? 'bg-green-100 text-green-700' : isSkipped ? 'bg-gray-200 text-gray-500' : 'bg-red-100 text-red-700'}
-                       `}>
-                         {originalIndex}
-                       </span>
-                    </div>
-                    <div className="flex-1">
-                       <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className={`text-xs px-2 py-0.5 rounded border font-bold uppercase ${isCorrect ? 'bg-green-50 border-green-200 text-green-700' : isSkipped ? 'bg-gray-100 border-gray-200 text-gray-600' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                             {isCorrect ? 'Correct' : isSkipped ? 'Not Attempted' : 'Incorrect'}
-                          </span>
-                          <span className="text-xs text-slate-500 font-medium">{q.subject} • {q.topic}</span>
-                       </div>
-                       <p className="text-slate-800 font-medium mb-4 leading-relaxed">{q.text}</p>
-                       
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                          {q.options.map((opt, optIdx) => {
-                            const isUserSelected = userRes?.selectedOption === optIdx;
-                            const isActualCorrect = q.correctAnswer === optIdx;
-                            
-                            let styles = "border-slate-200 bg-white opacity-80";
-                            if (isActualCorrect) styles = "border-green-500 bg-green-50 text-green-900 font-medium opacity-100";
-                            else if (isUserSelected && !isActualCorrect) styles = "border-red-500 bg-red-50 text-red-900 font-medium opacity-100";
-                            
-                            return (
-                              <div key={optIdx} className={`p-3 border rounded flex items-center ${styles}`}>
-                                 <span className="w-6 h-6 rounded-full border flex items-center justify-center text-xs mr-3 bg-white bg-opacity-50 font-bold">
-                                   {String.fromCharCode(65 + optIdx)}
-                                 </span>
-                                 {opt}
-                                 {isActualCorrect && <CheckCircle className="w-4 h-4 ml-auto text-green-600" />}
-                                 {isUserSelected && !isActualCorrect && <XCircle className="w-4 h-4 ml-auto text-red-600" />}
-                              </div>
-                            );
-                          })}
-                       </div>
-                       
-                       <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg text-sm text-slate-700">
-                          <div className="flex items-center gap-2 mb-1">
-                             <Sparkles className="w-4 h-4 text-blue-600" />
-                             <span className="font-bold text-blue-800">Explanation & Trick:</span>
-                          </div>
-                          {q.explanation}
-                       </div>
-                    </div>
-                  </div>
+        {/* Detailed Question Review */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h3 className="text-xl font-bold text-slate-800">Detailed Solutions</h3>
+                
+                <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-500" />
+                    <select 
+                        value={reviewFilter}
+                        onChange={(e) => setReviewFilter(e.target.value as any)}
+                        className="bg-white text-[#333333] border border-[#DDDDDD] text-sm rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#4285F4] outline-none"
+                    >
+                        <option value="All">All Questions</option>
+                        <option value="Incorrect">Incorrect Only</option>
+                        <option value="Skipped">Skipped Only</option>
+                    </select>
                 </div>
-              );
-            })}
-          </div>
+            </div>
+            
+            <div className="divide-y divide-slate-100">
+                {filteredQuestions.map((q, idx) => {
+                    const res = result.responses[q.id];
+                    const isCorrect = res?.selectedOption === q.correctAnswer;
+                    const isSkipped = res?.selectedOption === null || res?.selectedOption === undefined;
+                    
+                    return (
+                        <div key={q.id} className="p-6 hover:bg-slate-50 transition">
+                            <div className="flex gap-3 mb-3">
+                                <span className="text-xs font-bold px-2 py-1 bg-slate-200 text-slate-600 rounded">{q.subject}</span>
+                                <span className={`text-xs font-bold px-2 py-1 rounded flex items-center gap-1 ${isCorrect ? 'bg-green-100 text-green-700' : isSkipped ? 'bg-gray-100 text-gray-600' : 'bg-red-100 text-red-700'}`}>
+                                    {isCorrect ? <CheckCircle className="w-3 h-3"/> : isSkipped ? <MinusCircle className="w-3 h-3"/> : <XCircle className="w-3 h-3"/>}
+                                    {isCorrect ? 'Correct' : isSkipped ? 'Skipped' : 'Incorrect'}
+                                </span>
+                            </div>
+                            
+                            <p className="text-slate-800 font-medium mb-4">{q.text}</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                {q.options.map((opt, i) => (
+                                    <div key={i} className={`p-3 rounded border text-sm flex items-center justify-between
+                                        ${i === q.correctAnswer ? 'bg-green-50 border-green-200 text-green-800 font-bold' : 
+                                          (res?.selectedOption === i ? 'bg-red-50 border-red-200 text-red-800 font-bold' : 'bg-white border-slate-200 text-slate-600')}
+                                    `}>
+                                        <span>{String.fromCharCode(65 + i)}. {opt}</span>
+                                        {i === q.correctAnswer && <CheckCircle className="w-4 h-4 text-green-600" />}
+                                        {res?.selectedOption === i && i !== q.correctAnswer && <XCircle className="w-4 h-4 text-red-600" />}
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm">
+                                <p className="font-bold text-blue-800 mb-1">Explanation & Short Trick:</p>
+                                <p className="text-blue-900">{q.explanation}</p>
+                            </div>
+                        </div>
+                    );
+                })}
+                {filteredQuestions.length === 0 && (
+                    <div className="p-8 text-center text-slate-500">
+                        No questions found for this filter.
+                    </div>
+                )}
+            </div>
         </div>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-40 flex justify-center">
+        <button 
+            onClick={onBackToDashboard}
+            className="px-8 py-3 bg-slate-800 text-white rounded-full font-bold shadow-lg hover:bg-slate-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center transform"
+        >
+            <ArrowRight className="w-5 h-5 mr-2" /> Back to Dashboard
+        </button>
       </div>
     </div>
   );

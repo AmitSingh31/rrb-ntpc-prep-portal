@@ -265,7 +265,7 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
   const finishTest = () => {
     localStorage.removeItem('rrb_current_session');
 
-    const attempted = Object.values(responses).filter(r => r.selectedOption !== null).length;
+    const attempted = Object.values(responses).filter((r: UserResponse) => r.selectedOption !== null).length;
     const correct = questions.reduce((acc, q) => {
       if (!responses[q.id]) return acc;
       return acc + (responses[q.id]?.selectedOption === q.correctAnswer ? 1 : 0);
@@ -313,7 +313,7 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
 
   // Skeleton Loader for Progressive Fetching
   const renderSkeleton = () => (
-    <div className="flex-1 flex flex-col p-6 animate-pulse">
+    <div className="flex flex-col animate-pulse h-full">
         <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
         <div className="h-4 bg-gray-200 rounded w-1/6 mb-8"></div>
         <div className="h-12 bg-gray-200 rounded w-3/4 mb-4"></div>
@@ -386,201 +386,207 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Question Area */}
-        <div className="flex-1 flex flex-col overflow-y-auto p-4 md:p-6 bg-gray-50/50 relative">
+        {/* Left: Question Area (Scrollable Content + Fixed Footer) */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-gray-50/50 relative">
           
-          {!currentQuestion ? renderSkeleton() : (
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 min-h-[450px] relative">
-            <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
-              <div>
-                <div className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Question {currentQuestionIndex + 1}
-                </div>
-                <div className="flex gap-2 mt-2">
-                   <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded font-bold">
-                     {currentQuestion.subject}
-                   </span>
-                   {currentQuestion.pyqTag && (
-                     <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded border border-amber-100">
-                        <History className="w-3 h-3" />
-                        <span>{currentQuestion.pyqTag}</span>
-                     </div>
-                   )}
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                 {/* AI Features Buttons */}
-                 <button
-                    onClick={handleGetHint}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 border border-yellow-200 text-xs font-bold transition"
-                 >
-                    <Lightbulb className="w-3.5 h-3.5" />
-                    Hint
-                 </button>
-                 <button
-                    onClick={() => setShowDoubtChat(!showDoubtChat)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200 text-xs font-bold transition"
-                 >
-                    <Brain className="w-3.5 h-3.5" />
-                    Ask AI
-                 </button>
-
-                 <div className="w-px h-6 bg-slate-200 mx-2"></div>
-
-                 <button 
-                   onClick={handleBookmark}
-                   className={`p-2 rounded-full transition ${currentResponse?.isBookmarked ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-50 text-slate-300 hover:bg-slate-100'}`}
-                   title="Bookmark Question"
-                 >
-                    <Bookmark className={`w-5 h-5 ${currentResponse?.isBookmarked ? 'fill-current' : ''}`} />
-                 </button>
-              </div>
-            </div>
-
-            {/* Smart Hint Panel */}
-            {activeHint && (
-               <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded animate-fade-in relative">
-                  <button onClick={() => setActiveHint(null)} className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-800"><X className="w-4 h-4" /></button>
-                  <h4 className="text-xs font-bold text-yellow-700 uppercase mb-1 flex items-center"><Lightbulb className="w-3 h-3 mr-1" /> Strategic Hint</h4>
-                  <p className="text-slate-700 text-sm font-medium">{activeHint}</p>
-               </div>
-            )}
-            {loadingHint && (
-                <div className="mb-6 p-4 text-center text-slate-500 text-sm bg-slate-50 rounded animate-pulse">
-                    Thinking of a clue...
-                </div>
-            )}
-
-            <div className="text-lg md:text-xl text-slate-800 font-medium mb-8 leading-relaxed">
-              {currentQuestion.text}
-            </div>
-
-            <div className="space-y-3 w-full max-w-3xl">
-              {currentQuestion.options.map((option, idx) => (
-                <div 
-                  key={idx}
-                  onClick={() => handleOptionSelect(idx)}
-                  className={`
-                    p-4 rounded-xl border-2 cursor-pointer transition flex items-start group w-full relative overflow-hidden
-                    ${currentResponse?.selectedOption === idx 
-                      ? 'border-blue-500 bg-blue-50 shadow-md' 
-                      : 'border-slate-200 hover:border-blue-300 hover:bg-white bg-white'}
-                  `}
-                >
-                  <div className={`
-                    w-8 h-8 rounded-full border-2 mr-4 flex-shrink-0 flex items-center justify-center text-sm font-bold mt-0.5 z-10 transition-colors
-                    ${currentResponse?.selectedOption === idx 
-                      ? 'border-blue-500 bg-blue-500 text-white' 
-                      : 'border-slate-300 text-slate-500 group-hover:border-blue-400 group-hover:text-blue-500'}
-                  `}>
-                    {String.fromCharCode(65 + idx)}
+          {/* Scrollable Question Content */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-4">
+            {!currentQuestion ? renderSkeleton() : (
+              <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 min-h-[450px] relative">
+              <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4">
+                <div>
+                  <div className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Question {currentQuestionIndex + 1}
                   </div>
-                  <span className="text-slate-800 font-medium text-base leading-relaxed flex-1 z-10">{option}</span>
+                  <div className="flex gap-2 mt-2">
+                    <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded font-bold">
+                      {currentQuestion.subject}
+                    </span>
+                    {currentQuestion.pyqTag && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 text-xs font-bold rounded border border-amber-100">
+                          <History className="w-3 h-3" />
+                          <span>{currentQuestion.pyqTag}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-          )}
-
-          {/* Action Bar */}
-          <div className="flex flex-wrap items-center justify-between mt-6 gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-200 sticky bottom-0">
-             <div className="flex gap-2 flex-wrap">
-                <button 
-                  onClick={handleMarkForReview}
-                  className="flex items-center px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 font-bold text-sm transition"
-                >
-                  <Flag className="w-4 h-4 mr-2" /> Review
-                </button>
-                <button 
-                  onClick={handleSkip}
-                  className="flex items-center px-4 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 font-bold text-sm transition"
-                >
-                  <SkipForward className="w-4 h-4 mr-2" /> Skip
-                </button>
-                <button 
-                  onClick={handleClearResponse}
-                  className="flex items-center px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 font-bold text-sm transition"
-                >
-                  Clear
-                </button>
-             </div>
-             
-             <div className="flex gap-2 ml-auto">
-                <button 
-                  onClick={() => handleNavigate(currentQuestionIndex - 1)}
-                  disabled={currentQuestionIndex === 0}
-                  className="flex items-center px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 font-bold text-sm transition"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-                </button>
-                <button 
-                  onClick={() => handleNavigate(currentQuestionIndex + 1)}
-                  className="flex items-center px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-sm shadow-md hover:shadow-lg transition"
-                >
-                  {currentQuestionIndex >= totalQuestionsConfig - 1 ? 'Finish' : 'Next'} 
-                  {currentQuestionIndex < totalQuestionsConfig - 1 && <ChevronRight className="w-4 h-4 ml-1" />}
-                </button>
-             </div>
-          </div>
-        </div>
-
-        {/* AI Doubt Chat Overlay/Panel */}
-        {showDoubtChat && (
-          <div className="absolute right-0 top-0 bottom-14 w-80 md:w-96 bg-white shadow-2xl border-l border-slate-200 z-30 flex flex-col animate-slide-in-right">
-             <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
+                
                 <div className="flex items-center gap-2">
-                   <Brain className="w-5 h-5 text-yellow-400" />
-                   <h3 className="font-bold">AI Doubt Solver</h3>
-                </div>
-                <button onClick={() => setShowDoubtChat(false)} className="hover:bg-slate-700 p-1 rounded"><X className="w-4 h-4" /></button>
-             </div>
-             
-             <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
-                 {doubtHistory.length === 0 && (
-                    <div className="text-center text-slate-500 mt-10">
-                       <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-20" />
-                       <p className="text-sm">Ask me anything about this question!</p>
-                    </div>
-                 )}
-                 {doubtHistory.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                       <div className={`max-w-[85%] p-3 rounded-lg text-sm ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white border shadow-sm text-slate-700'}`}>
-                          {msg.text}
-                       </div>
-                    </div>
-                 ))}
-                 {loadingDoubt && (
-                    <div className="flex justify-start">
-                       <div className="bg-white border shadow-sm p-3 rounded-lg">
-                          <Loader className="w-4 h-4 animate-spin text-slate-400" />
-                       </div>
-                    </div>
-                 )}
-                 <div ref={chatEndRef} />
-             </div>
+                  {/* AI Features Buttons */}
+                  <button
+                      onClick={handleGetHint}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 border border-yellow-200 text-xs font-bold transition"
+                  >
+                      <Lightbulb className="w-3.5 h-3.5" />
+                      Hint
+                  </button>
+                  <button
+                      onClick={() => setShowDoubtChat(!showDoubtChat)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 border border-blue-200 text-xs font-bold transition"
+                  >
+                      <Brain className="w-3.5 h-3.5" />
+                      Ask AI
+                  </button>
 
-             <div className="p-3 bg-white border-t">
-                <div className="flex gap-2">
-                   <input 
-                      type="text" 
-                      value={doubtQuery}
-                      onChange={(e) => setDoubtQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAskDoubt()}
-                      placeholder="Type your doubt..."
-                      className="flex-1 text-sm bg-white text-[#333333] placeholder-[#999999] border border-[#DDDDDD] rounded-full px-4 py-2 focus:ring-2 focus:ring-[#4285F4] outline-none"
-                   />
+                  <div className="w-px h-6 bg-slate-200 mx-2"></div>
+
+                  <button 
+                    onClick={handleBookmark}
+                    className={`p-2 rounded-full transition ${currentResponse?.isBookmarked ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-50 text-slate-300 hover:bg-slate-100'}`}
+                    title="Bookmark Question"
+                  >
+                      <Bookmark className={`w-5 h-5 ${currentResponse?.isBookmarked ? 'fill-current' : ''}`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Smart Hint Panel */}
+              {activeHint && (
+                <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded animate-fade-in relative">
+                    <button onClick={() => setActiveHint(null)} className="absolute top-2 right-2 text-yellow-600 hover:text-yellow-800"><X className="w-4 h-4" /></button>
+                    <h4 className="text-xs font-bold text-yellow-700 uppercase mb-1 flex items-center"><Lightbulb className="w-3 h-3 mr-1" /> Strategic Hint</h4>
+                    <p className="text-slate-700 text-sm font-medium">{activeHint}</p>
+                </div>
+              )}
+              {loadingHint && (
+                  <div className="mb-6 p-4 text-center text-slate-500 text-sm bg-slate-50 rounded animate-pulse">
+                      Thinking of a clue...
+                  </div>
+              )}
+
+              <div className="text-lg md:text-xl text-slate-800 font-medium mb-8 leading-relaxed">
+                {currentQuestion.text}
+              </div>
+
+              <div className="space-y-3 w-full max-w-3xl">
+                {currentQuestion.options.map((option, idx) => (
+                  <div 
+                    key={idx}
+                    onClick={() => handleOptionSelect(idx)}
+                    className={`
+                      p-4 rounded-xl border-2 cursor-pointer transition flex items-start group w-full relative overflow-hidden
+                      ${currentResponse?.selectedOption === idx 
+                        ? 'border-blue-500 bg-blue-50 shadow-md' 
+                        : 'border-slate-200 hover:border-blue-300 hover:bg-white bg-white'}
+                    `}
+                  >
+                    <div className={`
+                      w-8 h-8 rounded-full border-2 mr-4 flex-shrink-0 flex items-center justify-center text-sm font-bold mt-0.5 z-10 transition-colors
+                      ${currentResponse?.selectedOption === idx 
+                        ? 'border-blue-500 bg-blue-500 text-white' 
+                        : 'border-slate-300 text-slate-500 group-hover:border-blue-400 group-hover:text-blue-500'}
+                    `}>
+                      {String.fromCharCode(65 + idx)}
+                    </div>
+                    <span className="text-slate-800 font-medium text-base leading-relaxed flex-1 z-10">{option}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            )}
+          </div>
+
+          {/* Fixed Footer Action Bar */}
+          <div className="p-3 md:p-4 bg-white border-t border-slate-200 z-20 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+             <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex gap-2 flex-wrap flex-1 sm:flex-initial">
                    <button 
-                     onClick={handleAskDoubt}
-                     disabled={!doubtQuery.trim() || loadingDoubt}
-                     className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50"
+                     onClick={handleMarkForReview}
+                     className="flex items-center px-3 md:px-4 py-2 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 font-bold text-xs md:text-sm transition border border-purple-100 whitespace-nowrap"
                    >
-                      <Send className="w-4 h-4" />
+                     <Flag className="w-3.5 h-3.5 mr-1.5" /> Review
+                   </button>
+                   <button 
+                     onClick={handleSkip}
+                     className="flex items-center px-3 md:px-4 py-2 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 font-bold text-xs md:text-sm transition border border-amber-100 whitespace-nowrap"
+                   >
+                     <SkipForward className="w-3.5 h-3.5 mr-1.5" /> Skip
+                   </button>
+                   <button 
+                     onClick={handleClearResponse}
+                     className="flex items-center px-3 md:px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 font-bold text-xs md:text-sm transition border border-slate-200 whitespace-nowrap"
+                   >
+                     Clear
+                   </button>
+                </div>
+                
+                <div className="flex gap-2 ml-auto shrink-0">
+                   <button 
+                     onClick={() => handleNavigate(currentQuestionIndex - 1)}
+                     disabled={currentQuestionIndex === 0}
+                     className="flex items-center px-3 md:px-5 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 font-bold text-xs md:text-sm transition"
+                   >
+                     <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                   </button>
+                   <button 
+                     onClick={() => handleNavigate(currentQuestionIndex + 1)}
+                     className="flex items-center px-5 md:px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-xs md:text-sm shadow-md hover:shadow-lg transition"
+                   >
+                     {currentQuestionIndex >= totalQuestionsConfig - 1 ? 'Finish' : 'Next'} 
+                     {currentQuestionIndex < totalQuestionsConfig - 1 && <ChevronRight className="w-4 h-4 ml-1" />}
                    </button>
                 </div>
              </div>
           </div>
-        )}
+
+          {/* AI Doubt Chat Overlay/Panel */}
+          {showDoubtChat && (
+            <div className="absolute right-0 top-0 bottom-0 w-80 md:w-96 bg-white shadow-2xl border-l border-slate-200 z-30 flex flex-col animate-slide-in-right">
+              <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-yellow-400" />
+                    <h3 className="font-bold">AI Doubt Solver</h3>
+                  </div>
+                  <button onClick={() => setShowDoubtChat(false)} className="hover:bg-slate-700 p-1 rounded"><X className="w-4 h-4" /></button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
+                  {doubtHistory.length === 0 && (
+                      <div className="text-center text-slate-500 mt-10">
+                        <MessageCircle className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">Ask me anything about this question!</p>
+                      </div>
+                  )}
+                  {doubtHistory.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-3 rounded-lg text-sm ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white border shadow-sm text-slate-700'}`}>
+                            {msg.text}
+                        </div>
+                      </div>
+                  ))}
+                  {loadingDoubt && (
+                      <div className="flex justify-start">
+                        <div className="bg-white border shadow-sm p-3 rounded-lg">
+                            <Loader className="w-4 h-4 animate-spin text-slate-400" />
+                        </div>
+                      </div>
+                  )}
+                  <div ref={chatEndRef} />
+              </div>
+
+              <div className="p-3 bg-white border-t">
+                  <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        value={doubtQuery}
+                        onChange={(e) => setDoubtQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAskDoubt()}
+                        placeholder="Type your doubt..."
+                        className="flex-1 text-sm bg-white text-[#333333] placeholder-[#999999] border border-[#DDDDDD] rounded-full px-4 py-2 focus:ring-2 focus:ring-[#4285F4] outline-none"
+                    />
+                    <button 
+                      onClick={handleAskDoubt}
+                      disabled={!doubtQuery.trim() || loadingDoubt}
+                      className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50"
+                    >
+                        <Send className="w-4 h-4" />
+                    </button>
+                  </div>
+              </div>
+            </div>
+          )}
+
+        </div>
 
         {/* Right: Palette */}
         <div className="w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 hidden md:flex z-20">
@@ -681,7 +687,7 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
               </div>
               <h3 className="text-xl font-bold text-center mb-2 text-slate-800">Ready to Submit?</h3>
               <p className="text-slate-500 text-center mb-8 px-4">
-                You have answered <span className="text-slate-900 font-bold">{Object.values(responses).filter(r => r.selectedOption !== null).length}</span> questions.
+                You have answered <span className="text-slate-900 font-bold">{Object.values(responses).filter((r: UserResponse) => r.selectedOption !== null).length}</span> questions.
                 <br/>Time remaining: <span className="font-mono text-slate-900 font-bold">{formatTime(timeLeft)}</span>
               </p>
               <div className="flex gap-4">
